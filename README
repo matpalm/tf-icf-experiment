@@ -1,0 +1,8 @@
+cat perez | perl -plne'chomp;tr/A-Z/a-z/;s/.*?\|.*?\|//;s/^\s+//;s/\s+$//;s/\[\.{3}\]//;s/\!+/\!/g;s/\?+/\?/g;' > perez.text
+
+$ cat thereg.text | ./tf_icf_all_lines.rb > test1.html
+
+$ cat thereg.text | ./tf_icf_particular_article.rb with udo > test2_udo.html
+$ cat thereg.text | ./tf_icf_particular_article.rb wireds advice > test2_wired.html
+
+$ cat thereg.text | ./tf_idf.rb > test3.html

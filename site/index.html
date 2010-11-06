@@ -1,0 +1,111 @@
+<html>
+  <head>
+    <title>tf/icf experiment</title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link rel=StyleSheet href="style.css" type="text/css">
+  </head>
+  <body>
+    <h1>td/icf</h1>
+    <p>
+      while doing some more research on trending algorithms i came across a cool little paper
+      about term frequency normalisation for streaming data: 
+      <a href="http://aser.ornl.gov/publications/ICMLA06.pdf">TF-ICF: A New Term Weighting Scheme for Clustering Dynamic Data Streams</a>.
+    </p>
+    <p>
+      i'm lately finding streaming related algorithms quite interesting and think are the way forward in terms of dealing with large amounts of
+      constant data. it's just not feasible to use algorithms that expect you to have all the data at any given time since it forces
+      you to reprocess all the data you've ever seen as you get new examples. i think the best solutions are the ones that build models
+      of the data and fold in new examples in batches. anyways, i'm getting off topic already.
+    </p>
+
+    <p>
+      tf/icf as presented in the paper is a variant on the classic <a href="http://en.wikipedia.org/wiki/Tf–idf">tf/idf</a> for
+      weighting of terms. instead of requiring all weighting in all docs to be recalculated as a new document comes along (as tf/idf strictly
+      does) it instead just approximates for the new document. 
+    </p>
+    
+    <p>
+      so how does it do? actually quite well, here's my experiemental breakdown...
+    </p>
+
+<h1>the data</h1>
+
+<p>
+for this experiment i'm using 4500 rss articles taken from <a href="http://www.theregister.co.uk/">theregister.co.uk</a>, here's <a href="thereg.text.sample.html">a sample</a> (one article per line)
+</p>
+
+<p>
+i picked one particular articles to investigate, here it is in it's crude tokenised form
+<div class="chunk">
+wireds advice could seriously damage your business exclusive the most comprehensive empirical study of digital music sales ever conducted has some bad news for californian technology utopians since 2004 wired magazine editor chris anderson has been hawking his long tail proposition around the world blockbusters will matter less and businesses will sell more of less the graph has become iconic a kind of hockey stick for web 2 0 with the author applying his message to many different business sectors alas following the wired way of business as a matter of faith could be catastrophic for your business and investment decisions
+</div>
+</p>
+
+<h1>tf/idf</h1>
+
+<p>
+here's how the terms in this article get weighted with traditional tf/idf calculated across the entire corpus. 
+<small>(word size is proportional to the relevance contribution of the word to this documents according to tf/idf)</small>
+<div class="chunk"><font size=3.76em>wireds</font> <font size=3.17em>advice</font> <font size=3.27em>could</font> <font size=3.27em>seriously</font> <font size=3.16em>damage</font> <font size=3.1em>your</font> <font size=4.81em>business</font> <font size=2.95em>exclusive</font> <font size=2.11em>the</font> <font size=2.7em>most</font> <font size=3.45em>comprehensive</font> <font size=3.76em>empirical</font> <font size=2.71em>study</font> <font size=2.45em>of</font> <font size=2.81em>digital</font> <font size=2.77em>music</font> <font size=2.66em>sales</font> <font size=2.86em>ever</font> <font size=3.36em>conducted</font> <font size=2.53em>has</font> <font size=2.57em>some</font> <font size=2.97em>bad</font> <font size=2.79em>news</font> <font size=2.59em>for</font> <font size=3.36em>californian</font> <font size=2.63em>technology</font> <font size=3.76em>utopians</font> <font size=2.87em>since</font> <font size=3.4em>2004</font> <font size=5.0em>wired</font> <font size=3.27em>magazine</font> <font size=3.45em>editor</font> <font size=3.33em>chris</font> <font size=3.61em>anderson</font> <font size=2.53em>has</font> <font size=2.46em>been</font> <font size=3.51em>hawking</font> <font size=3.35em>his</font> <font size=2.76em>long</font> <font size=3.51em>tail</font> <font size=3.61em>proposition</font> <font size=2.78em>around</font> <font size=2.11em>the</font> <font size=2.64em>world</font> <font size=3.76em>blockbusters</font> <font size=2.83em>will</font> <font size=4.25em>matter</font> <font size=3.66em>less</font> <font size=2.24em>and</font> <font size=2.94em>businesses</font> <font size=2.83em>will</font> <font size=2.98em>sell</font> <font size=2.45em>more</font> <font size=2.45em>of</font> <font size=3.66em>less</font> <font size=2.11em>the</font> <font size=3.76em>graph</font> <font size=2.53em>has</font> <font size=2.89em>become</font> <font size=3.4em>iconic</font> <font size=2.13em>a</font> <font size=3.02em>kind</font> <font size=2.45em>of</font> <font size=3.61em>hockey</font> <font size=3.11em>stick</font> <font size=2.59em>for</font> <font size=2.55em>web</font> <font size=2.74em>2</font> <font size=2.84em>0</font> <font size=2.25em>with</font> <font size=2.11em>the</font> <font size=3.33em>author</font> <font size=3.4em>applying</font> <font size=3.35em>his</font> <font size=3.11em>message</font> <font size=2.0em>to</font> <font size=2.78em>many</font> <font size=3.05em>different</font> <font size=4.81em>business</font> <font size=3.45em>sectors</font> <font size=3.51em>alas</font> <font size=2.79em>following</font> <font size=2.11em>the</font> <font size=5.0em>wired</font> <font size=2.72em>way</font> <font size=2.45em>of</font> <font size=4.81em>business</font> <font size=2.32em>as</font> <font size=2.13em>a</font> <font size=4.25em>matter</font> <font size=2.45em>of</font> <font size=3.4em>faith</font> <font size=3.27em>could</font> <font size=2.33em>be</font> <font size=3.76em>catastrophic</font> <font size=2.59em>for</font> <font size=3.1em>your</font> <font size=4.81em>business</font> <font size=2.24em>and</font> <font size=3.01em>investment</font> <font size=3.27em>decisions</font>
+</div>
+</p>
+
+<p>
+looks like what we'd expect. common english language words such as 'a' and 'the' give little weight. words common to this document but uncommon
+elsewhere are given a big weight; in particular 'wired' really stands out.
+</p>
+
+<h1>tf/icf</h1>
+
+<p>how about tf/icf?</p>
+
+<p>
+the term weightings in this case vary considerably based on how many documents have already been processed; the more documents previously seen,
+the more accurate (ie closer to the "true" tf/idf) they become
+</p>
+
+<p>
+eg when the document is only the 6th to be seen it's weightings are quite different...
+<div class="chunk"><font size=2.9em>wireds</font> <font size=2.9em>advice</font> <font size=3.83em>could</font> <font size=2.9em>seriously</font> <font size=2.9em>damage</font> <font size=3.02em>your</font> <font size=5.0em>business</font> <font size=2.9em>exclusive</font> <font size=2.42em>the</font> <font size=2.9em>most</font> <font size=2.9em>comprehensive</font> <font size=2.9em>empirical</font> <font size=2.9em>study</font> <font size=2.42em>of</font> <font size=2.9em>digital</font> <font size=2.9em>music</font> <font size=2.39em>sales</font> <font size=2.39em>ever</font> <font size=2.9em>conducted</font> <font size=2.73em>has</font> <font size=2.9em>some</font> <font size=2.9em>bad</font> <font size=2.9em>news</font> <font size=2.73em>for</font> <font size=2.9em>californian</font> <font size=2.9em>technology</font> <font size=2.9em>utopians</font> <font size=2.9em>since</font> <font size=2.9em>2004</font> <font size=3.83em>wired</font> <font size=2.39em>magazine</font> <font size=2.9em>editor</font> <font size=2.9em>chris</font> <font size=2.9em>anderson</font> <font size=2.73em>has</font> <font size=2.9em>been</font> <font size=2.9em>hawking</font> <font size=3.83em>his</font> <font size=2.9em>long</font> <font size=2.9em>tail</font> <font size=2.9em>proposition</font> <font size=2.9em>around</font> <font size=2.42em>the</font> <font size=2.9em>world</font> <font size=2.9em>blockbusters</font> <font size=2.44em>will</font> <font size=3.83em>matter</font> <font size=3.83em>less</font> <font size=3.83em>and</font> <font size=2.9em>businesses</font> <font size=2.44em>will</font> <font size=2.9em>sell</font> <font size=2.9em>more</font> <font size=2.42em>of</font> <font size=3.83em>less</font> <font size=2.42em>the</font> <font size=2.9em>graph</font> <font size=2.73em>has</font> <font size=2.39em>become</font> <font size=2.9em>iconic</font> <font size=2.0em>a</font> <font size=2.9em>kind</font> <font size=2.42em>of</font> <font size=2.9em>hockey</font> <font size=2.9em>stick</font> <font size=2.73em>for</font> <font size=2.9em>web</font> <font size=2.9em>2</font> <font size=2.9em>0</font> <font size=2.9em>with</font> <font size=2.42em>the</font> <font size=2.9em>author</font> <font size=2.9em>applying</font> <font size=3.83em>his</font> <font size=2.9em>message</font> <font size=2.39em>to</font> <font size=2.9em>many</font> <font size=2.9em>different</font> <font size=5.0em>business</font> <font size=2.9em>sectors</font> <font size=2.9em>alas</font> <font size=2.9em>following</font> <font size=2.42em>the</font> <font size=3.83em>wired</font> <font size=2.9em>way</font> <font size=2.42em>of</font> <font size=5.0em>business</font> <font size=2.39em>as</font> <font size=2.0em>a</font> <font size=3.83em>matter</font> <font size=2.42em>of</font> <font size=2.9em>faith</font> <font size=3.83em>could</font> <font size=2.39em>be</font> <font size=2.9em>catastrophic</font> <font size=2.73em>for</font> <font size=3.02em>your</font> <font size=5.0em>business</font> <font size=3.83em>and</font> <font size=2.9em>investment</font> <font size=2.9em>decisions</font>
+</div>
+</p>
+
+<p>but if 400 (or more) documents have been seen it's values are starting to look more like that of the true tf/idf; here's another example of when the document was the 417th to be processed...
+<div class="chunk"><font size=3.83em>wireds</font> <font size=3.57em>advice</font> <font size=3.53em>could</font> <font size=3.49em>seriously</font> <font size=3.57em>damage</font> <font size=3.36em>your</font> <font size=4.84em>business</font> <font size=3.57em>exclusive</font> <font size=2.0em>the</font> <font size=2.99em>most</font> <font size=3.83em>comprehensive</font> <font size=3.83em>empirical</font> <font size=3.23em>study</font> <font size=2.29em>of</font> <font size=3.36em>digital</font> <font size=3.23em>music</font> <font size=3.01em>sales</font> <font size=3.36em>ever</font> <font size=3.83em>conducted</font> <font size=2.56em>has</font> <font size=2.89em>some</font> <font size=3.57em>bad</font> <font size=3.08em>news</font> <font size=2.53em>for</font> <font size=3.57em>californian</font> <font size=3.03em>technology</font> <font size=3.83em>utopians</font> <font size=3.27em>since</font> <font size=3.68em>2004</font> <font size=5.0em>wired</font> <font size=3.83em>magazine</font> <font size=3.83em>editor</font> <font size=3.83em>chris</font> <font size=3.83em>anderson</font> <font size=2.56em>has</font> <font size=2.7em>been</font> <font size=3.83em>hawking</font> <font size=3.85em>his</font> <font size=3.2em>long</font> <font size=3.83em>tail</font> <font size=3.83em>proposition</font> <font size=3.13em>around</font> <font size=2.0em>the</font> <font size=2.99em>world</font> <font size=3.83em>blockbusters</font> <font size=3.04em>will</font> <font size=4.76em>matter</font> <font size=3.94em>less</font> <font size=2.29em>and</font> <font size=3.42em>businesses</font> <font size=3.04em>will</font> <font size=3.68em>sell</font> <font size=2.92em>more</font> <font size=2.29em>of</font> <font size=3.94em>less</font> <font size=2.0em>the</font> <font size=3.83em>graph</font> <font size=2.56em>has</font> <font size=3.27em>become</font> <font size=3.83em>iconic</font> <font size=2.06em>a</font> <font size=3.68em>kind</font> <font size=2.29em>of</font> <font size=3.83em>hockey</font> <font size=3.57em>stick</font> <font size=2.53em>for</font> <font size=2.92em>web</font> <font size=3.08em>2</font> <font size=3.16em>0</font> <font size=2.38em>with</font> <font size=2.0em>the</font> <font size=3.68em>author</font> <font size=3.68em>applying</font> <font size=3.85em>his</font> <font size=3.83em>message</font> <font size=2.0em>to</font> <font size=3.49em>many</font> <font size=3.57em>different</font> <font size=4.84em>business</font> <font size=3.83em>sectors</font> <font size=3.83em>alas</font> <font size=3.16em>following</font> <font size=2.0em>the</font> <font size=5.0em>wired</font> <font size=3.13em>way</font> <font size=2.29em>of</font> <font size=4.84em>business</font> <font size=2.55em>as</font> <font size=2.06em>a</font> <font size=4.76em>matter</font> <font size=2.29em>of</font> <font size=3.83em>faith</font> <font size=3.53em>could</font> <font size=2.52em>be</font> <font size=3.83em>catastrophic</font> <font size=2.53em>for</font> <font size=3.36em>your</font> <font size=4.84em>business</font> <font size=2.29em>and</font> <font size=3.57em>investment</font> <font size=3.68em>decisions</font></div>
+</p>
+
+<p>
+the values of the tf/icf are never the same as that of tf/idf (even if this document is the last to be seen) but they look close enough to be workable...</p>
+
+<p><small>jun 9 2010, see other stuff at <a href="http://www.matpalm.com">matpalm.com</a></small></p>
+
+<hr/>
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  var disqus_identifier='tf_icf';
+    (function() {
+   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+   dsq.src = 'http://matpalm.disqus.com/embed.js';
+   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript=matpalm">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+<script type="text/javascript">
+//<![CDATA[
+(function() {
+var links = document.getElementsByTagName('a');
+var query = '?';
+for(var i = 0; i < links.length; i++) {
+if(links[i].href.indexOf('#disqus_thread') >= 0) {
+query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+}
+}
+document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/matpalm/get_num_replies.js' + query + '"></' + 'script>');
+})();
+//]]>
+</script>
+  </body>
+
+</html>
