@@ -40,9 +40,9 @@ class Rescaler
 
 end
 
-def tf_idf lines
+def tf_icf lines
   
-  # idf support
+  # icf support
   num_docs = lines.size.to_f
   number_docs_with_term = Hash.new 0
   lines.each do |terms|
@@ -61,12 +61,12 @@ def tf_idf lines
     term_freq = Hash.new 0
     terms.each { |t| term_freq[t] += 1 }
 
-    # calc tf/idf
+    # calc tf/icf
     weights = {}
     terms.uniq.each do |term| 
       tf = term_freq[term].to_f / term.size
-      idf = Math.log ( num_docs / number_docs_with_term[term])
-      weights[t] = tf/idf
+      icf = Math.log ( num_docs / number_docs_with_term[term])
+      weights[t] = tf/icf
       rescaler.observe weights[t]
     end
 
@@ -77,7 +77,7 @@ def tf_idf lines
       weights[term] = rescaled
     end
 
-    # remit line, font size weighted by tf/idf
+    # remit line, font size weighted by tf/icf
     if terms.first == 'wireds'
       printf "<tr><td><strong>#{n.to_i}</strong></td><td>"
       terms.each do |term|
@@ -105,5 +105,5 @@ lines = []
 STDIN.each { |l| lines << l.gsub("'",'').gsub(/[^a-z0-9]/,' ').split }
 
 puts "<html><table>"
-tf_idf lines 
+tf_icf lines 
 puts "</table></html>"
