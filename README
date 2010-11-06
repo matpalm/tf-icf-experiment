@@ -1,3 +1,6 @@
+http://matpalm.com/blog/2010/06/09/a-quick-study-in-tficf/
+
+
 cat perez | perl -plne'chomp;tr/A-Z/a-z/;s/.*?\|.*?\|//;s/^\s+//;s/\s+$//;s/\[\.{3}\]//;s/\!+/\!/g;s/\?+/\?/g;' > perez.text
 
 $ cat thereg.text | ./tf_icf_all_lines.rb > test1.html
