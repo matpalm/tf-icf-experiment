@@ -1,5 +1,55 @@
 http://matpalm.com/blog/2010/06/09/a-quick-study-in-tficf/
 
+--- an erlang vs ruby impl (an excuse to trial some erlang key/value stores)
+$ bzcat thereg.text.bz2 | ./sanitise.rb > thereg.text
+
+$ cat thereg.text | ./tf_icf.rb | sort -n > tf_icf.ruby.out
+$ cat thereg.text | erl -noshell -s tf_icf main -s init stop | sort -n > tf_icf.erl.out
+
+
+
+-- distraction #1
+-- running vs redis
+
+# a simple redis less version for comparison
+$ cat thereg.p[1234] thereg.lastline | ./tf_icf.rb | tail
+4044  smartphone  5.38763800149969
+4044  spread	  4.0343454539902
+4044  standards	  3.39922111661842
+4044  the	  0.25103881423808
+4044  their	  1.72877549712729
+4044  to	  0.551170169042125
+4044  two	  2.06374914747639
+4044  vowing	  4.9952514818266
+4044  web	  2.00259676882783
+4044  webos	  4.9952514818266
+
+# a version with a fake redis
+$ time cat thereg.p[1234] thereg.lastline | ./tf_icf_redis.rb fake
+0.5s
+OK
+
+# a real redis example
+$ ./reset_redis.rb
+$ time cat thereg.p[1234] | ./tf_icf_redis.rb
+real   0m11.408s
+$ cat thereg.lastline | ./tf_icf_redis.rb
+OK
+
+# split over 4 cores make no difference to time, bottleneck must be redis integration
+./reset_redis.rb
+./tf_icf_redis.rb < thereg.p1 &
+./tf_icf_redis.rb < thereg.p2 &
+./tf_icf_redis.rb < thereg.p3 &
+./tf_icf_redis.rb < thereg.p4 &
+wait
+./tf_icf_redis.rb < thereg.lastline
+~ 11s
+
+
+
+--- for making the website
+
 $ cat thereg.text | ./tf_icf_all_lines.rb > test1.html
 
 $ cat thereg.text | ./tf_icf_particular_article.rb with udo > test2_udo.html
@@ -7,10 +57,3 @@ $ cat thereg.text | ./tf_icf_particular_article.rb wireds advice > test2_wired.h
 
 $ cat thereg.text | ./tf_idf.rb > test3.html
 
-
---- impl in erlang using riak backend
-
-$ bzcat thereg.text.bz2 | ./sanitise.rb > thereg.text
-
-$ cat thereg.text | ./tf_icf.rb | sort -n > tf_icf.ruby.out
-$ cat thereg.text | erl -noshell -s tf_icf main -s init stop | sort -n > tf_icf.erl.out
